@@ -1,22 +1,21 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-    fetchTrendingMovies, fetchPopularTvShows, fetchTopRatedMovies,
-    fetchNewMovieReleases, fetchMovieDetails,
-    fetchTvShowDetails, fetchNetflixOriginals, fetchDisneyOriginals,
-    fetchAmazonOriginals, fetchAppleOriginals
+    fetchTrendingMovies, fetchPopularTvShows, fetchUpcomingMovies,
+    fetchMovieDetails, fetchTvShowDetails, fetchPopularMovies,
+    fetchMovieRecommendations, fetchTvRecommendations
 } from '../api/tmdb';
 import { useWatchHistory } from '../hooks/useWatchHistory';
 import Hero from '../components/Hero';
 import CarouselRow from '../components/CarouselRow';
+import Top10CarouselRow from '../components/Top10CarouselRow';
 import DetailsModal from '../components/DetailsModal';
 import { CarouselSkeleton } from '../components/Skeleton';
 
 const BrowsePage = () => {
     const [data, setData] = useState({
-        trendingMovies: [], popularTv: [], topRatedMovies: [],
-        newMovieReleases: [], netflixOriginals: [], disneyOriginals: [],
-        amazonOriginals: [], appleOriginals: []
+        top10Movies: [], popularTv: [], forYou: [],
+        upcomingMovies: [], actionMovies: [], comedyMovies: []
     });
     const [continueWatching, setContinueWatching] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -39,32 +38,41 @@ const BrowsePage = () => {
             })
         );
         setContinueWatching(detailedItems.filter(Boolean));
+        return sortedHistory;
     }, [getHistory]);
 
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
             try {
-                await fetchContinueWatchingDetails();
+                const history = await fetchContinueWatchingDetails();
+
+                let forYouPromise;
+                if (history.length > 0) {
+                    const lastWatched = history[0];
+                    forYouPromise = lastWatched.mediaType === 'movie'
+                        ? fetchMovieRecommendations(lastWatched.id)
+                        : fetchTvRecommendations(lastWatched.id);
+                } else {
+                    forYouPromise = fetchTrendingMovies(); // Fallback to trending
+                }
+
                 const [
-                    trendingRes, popularTvRes, topRatedRes, newReleasesRes,
-                    netflixRes, disneyRes, amazonRes, appleRes
+                    top10Res, popularTvRes, upcomingRes,
+                    actionMoviesRes, comedyMoviesRes, forYouRes
                 ] = await Promise.all([
-                    fetchTrendingMovies(), fetchPopularTvShows(), fetchTopRatedMovies(),
-                    fetchNewMovieReleases(), fetchNetflixOriginals(), fetchDisneyOriginals(),
-                    fetchAmazonOriginals(), fetchAppleOriginals()
+                    fetchPopularMovies(), fetchPopularTvShows(), fetchUpcomingMovies(),
+                    fetchPopularMovies('28'), fetchPopularMovies('35'), forYouPromise
                 ]);
                 setData({
-                    trendingMovies: trendingRes.data.results,
+                    top10Movies: top10Res.data.results,
                     popularTv: popularTvRes.data.results,
-                    topRatedMovies: topRatedRes.data.results,
-                    newMovieReleases: newReleasesRes.data.results,
-                    netflixOriginals: netflixRes.data.results,
-                    disneyOriginals: disneyRes.data.results,
-                    amazonOriginals: amazonRes.data.results,
-                    appleOriginals: appleRes.data.results,
+                    upcomingMovies: upcomingRes.data.results,
+                    actionMovies: actionMoviesRes.data.results,
+                    comedyMovies: comedyMoviesRes.data.results,
+                    forYou: forYouRes.data.results,
                 });
-                setHeroMovie(trendingRes.data.results[Math.floor(Math.random() * trendingRes.data.results.length)]);
+                setHeroMovie(top10Res.data.results[Math.floor(Math.random() * 10)]);
             } catch (error) {
                 console.error("Failed to fetch initial data", error);
             } finally {
@@ -99,14 +107,12 @@ const BrowsePage = () => {
                 ) : (
                     <>
                         {continueWatching.length > 0 && <CarouselRow title="Continue Watching" items={continueWatching} onCardClick={handleContinueWatchingClick} />}
-                        <CarouselRow title="Trending Movies" items={data.trendingMovies} onCardClick={(media) => openModal(media, 'movie')} mediaType="movie" categoryKey="trending" />
-                        <CarouselRow title="Netflix Originals" items={data.netflixOriginals} onCardClick={(media) => openModal(media, 'tv')} mediaType="tv" categoryKey="netflix" />
-                        <CarouselRow title="New Movie Releases" items={data.newMovieReleases} onCardClick={(media) => openModal(media, 'movie')} mediaType="movie" categoryKey="new_releases" />
-                        <CarouselRow title="Disney+ Originals" items={data.disneyOriginals} onCardClick={(media) => openModal(media, 'tv')} mediaType="tv" categoryKey="disney" />
-                        <CarouselRow title="Amazon Originals" items={data.amazonOriginals} onCardClick={(media) => openModal(media, 'tv')} mediaType="tv" categoryKey="amazon" />
-                        <CarouselRow title="Apple TV+ Originals" items={data.appleOriginals} onCardClick={(media) => openModal(media, 'tv')} mediaType="tv" categoryKey="apple" />
-                        <CarouselRow title="Critically Acclaimed Movies" items={data.topRatedMovies} onCardClick={(media) => openModal(media, 'movie')} mediaType="movie" categoryKey="top_rated" />
-                        <CarouselRow title="Popular TV Shows" items={data.popularTv} onCardClick={(media) => openModal(media, 'tv')} mediaType="tv" categoryKey="popular" />
+                        {data.forYou.length > 0 && <CarouselRow title="For You" items={data.forYou} onCardClick={(media) => openModal(media, media.title ? 'movie' : 'tv')} />}
+                        <Top10CarouselRow title="Top 10 Movies Today" items={data.top10Movies} onCardClick={(media) => openModal(media, 'movie')} />
+                        <CarouselRow title="Upcoming" items={data.upcomingMovies} onCardClick={(media) => openModal(media, 'movie')} isUpcoming={true} />
+                        <CarouselRow title="Popular TV Shows" items={data.popularTv} onCardClick={(media) => openModal(media, 'tv')} />
+                        <CarouselRow title="Action & Adventure" items={data.actionMovies} onCardClick={(media) => openModal(media, 'movie')} />
+                        <CarouselRow title="Comedies" items={data.comedyMovies} onCardClick={(media) => openModal(media, 'movie')} />
                     </>
                 )}
             </div>

@@ -4,13 +4,16 @@ const API_BASE_URL = 'http://localhost:8080/api/tmdb';
 
 const client = axios.create({ baseURL: API_BASE_URL });
 
-// New functions for streaming originals
+// New functions for new carousels
+export const fetchAnimationMovies = (page = 1) => client.get(`/movie/animation?page=${page}`);
+export const fetchAnimationTvShows = (page = 1) => client.get(`/tv/animation?page=${page}`);
+export const fetchHboOriginals = (page = 1) => client.get(`/tv/hbo?page=${page}`);
+
+// All other functions...
 export const fetchNetflixOriginals = (page = 1) => client.get(`/tv/netflix?page=${page}`);
 export const fetchDisneyOriginals = (page = 1) => client.get(`/tv/disney?page=${page}`);
 export const fetchAmazonOriginals = (page = 1) => client.get(`/tv/amazon?page=${page}`);
 export const fetchAppleOriginals = (page = 1) => client.get(`/tv/apple?page=${page}`);
-
-// All other functions...
 export const fetchHighQualityMovies = (genreId = '', page = 1) => client.get(`/movie/high_quality?genreId=${genreId}&page=${page}`);
 export const fetchTrendingTvShows = (page = 1) => client.get(`/trending/tv?page=${page}`);
 export const fetchNewMovieReleases = (page = 1) => client.get(`/movie/new_releases?page=${page}`);
@@ -29,6 +32,19 @@ export const fetchTvShowDetails = (id) => client.get(`/tv/${id}`);
 export const fetchSeasonDetails = (tvId, seasonNumber) => client.get(`/tv/${tvId}/season/${seasonNumber}`);
 export const fetchSimilarMovies = (id) => client.get(`/movie/${id}/similar`);
 export const fetchSimilarTvShows = (id) => client.get(`/tv/${id}/similar`);
+
+export const fetchPopularAnime = (page = 1) => client.get(`/anime/popular?page=${page}`);
+export const fetchTopRatedAnime = (page = 1) => client.get(`/anime/top_rated?page=${page}`);
+export const fetchNetflixAnime = (page = 1) => client.get(`/anime/netflix?page=${page}`);
+export const fetchDisneyAnime = (page = 1) => client.get(`/anime/disney?page=${page}`);
+export const fetchHboAnime = (page = 1) => client.get(`/anime/hbo?page=${page}`);
+export const fetchAppleAnime = (page = 1) => client.get(`/anime/apple?page=${page}`);
+
+export const fetchMovieRecommendations = (movieId) => client.get(`/movie/${movieId}/recommendations`);
+export const fetchTvRecommendations = (showId) => client.get(`/tv/${showId}/recommendations`);
+
+export const fetchVideos = (mediaType, id) => client.get(`/${mediaType}/${id}/videos`);
+
 
 export const searchMedia = (query) => {
     const movieSearch = client.get(`/search/movie?query=${query}`);

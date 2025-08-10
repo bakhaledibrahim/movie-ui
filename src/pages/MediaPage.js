@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import {
     fetchMovieGenres, fetchTvShowGenres, fetchNowPlayingMovies,
     fetchPopularMovies, fetchTopRatedMovies, fetchPopularTvShows,
-    fetchTopRatedTvShows, fetchUpcomingMovies, fetchHighQualityMovies
+    fetchTopRatedTvShows, fetchUpcomingMovies, fetchHighQualityMovies,
+    fetchPopularAnime, fetchTopRatedAnime, fetchNetflixAnime,
+    fetchDisneyAnime, fetchHboAnime, fetchAppleAnime
 } from '../api/tmdb';
 import Hero from '../components/Hero';
 import CarouselRow from '../components/CarouselRow';
@@ -18,6 +20,12 @@ const MediaPage = ({ mediaType }) => {
     const [selectedMedia, setSelectedMedia] = useState(null);
 
     useEffect(() => {
+        // No genre filter for anime page, so we don't fetch genres
+        if (mediaType === 'anime') {
+            setGenres([]);
+            setSelectedGenreId('');
+            return;
+        }
         const getGenres = async () => {
             try {
                 const response = mediaType === 'movie' ? await fetchMovieGenres() : await fetchTvShowGenres();
@@ -51,12 +59,12 @@ const MediaPage = ({ mediaType }) => {
                     fetchedData = {
                         "in_theaters": { title: "In Theaters", items: inTheaters.data.results },
                         "upcoming": { title: "Upcoming", items: upcoming.data.results },
-                        "high_quality": { title: "High Quality (Digital/Blu-ray)", items: highQuality.data.results },
+                        "high_quality": { title: "High Quality", items: highQuality.data.results },
                         "popular": { title: "Popular", items: popular.data.results },
                         "top_rated": { title: "Top Rated", items: topRated.data.results },
                     };
                     heroCandidates = popular.data.results.length > 0 ? popular.data.results : inTheaters.data.results;
-                } else { // tv
+                } else if (mediaType === 'tv') {
                     const [popular, topRated] = await Promise.all([
                         fetchPopularTvShows(selectedGenreId, 1),
                         fetchTopRatedTvShows(selectedGenreId, 1)
@@ -64,6 +72,24 @@ const MediaPage = ({ mediaType }) => {
                     fetchedData = {
                         "popular": { title: "Popular", items: popular.data.results },
                         "top_rated": { title: "Top Rated", items: topRated.data.results },
+                    };
+                    heroCandidates = popular.data.results;
+                } else if (mediaType === 'anime') {
+                    const [popular, topRated, netflix, disney, hbo, apple] = await Promise.all([
+                        fetchPopularAnime(1),
+                        fetchTopRatedAnime(1),
+                        fetchNetflixAnime(1),
+                        fetchDisneyAnime(1),
+                        fetchHboAnime(1),
+                        fetchAppleAnime(1),
+                    ]);
+                    fetchedData = {
+                        "popular_anime": { title: "Most Popular Anime", items: popular.data.results },
+                        "top_rated_anime": { title: "Top Rated Anime", items: topRated.data.results },
+                        "netflix_anime": { title: "Netflix Anime", items: netflix.data.results },
+                        "disney_anime": { title: "Disney+ Anime", items: disney.data.results },
+                        "hbo_anime": { title: "HBO Anime", items: hbo.data.results },
+                        "apple_anime": { title: "Apple TV+ Anime", items: apple.data.results },
                     };
                     heroCandidates = popular.data.results;
                 }
@@ -84,15 +110,14 @@ const MediaPage = ({ mediaType }) => {
         fetchData();
     }, [mediaType, selectedGenreId]);
 
-    const handleGenreChange = (e) => {
-        setSelectedGenreId(e.target.value);
+    const handleGenreChange = (genreId) => {
+        setSelectedGenreId(genreId);
     };
 
     const openModal = (media) => setSelectedMedia(media);
     const closeModal = () => setSelectedMedia(null);
 
     const selectedGenre = genres.find(g => g.id === parseInt(selectedGenreId));
-    // const pageTitle = selectedGenre ? selectedGenre.name : `All ${mediaType === 'movie' ? 'Movies' : 'TV Shows'}`;
 
     return (
         <main>
@@ -100,29 +125,40 @@ const MediaPage = ({ mediaType }) => {
 
             <div className="px-4 md:px-12 -mt-20 relative z-10 pb-16">
                 <div className="flex items-center justify-between mb-8 pt-20">
-                    <div className="flex items-center space-x-4">
-                        <h1 className="text-4xl font-bold capitalize">{mediaType}s</h1>
-                        <select
-                            value={selectedGenreId}
-                            onChange={handleGenreChange}
-                            className="bg-gray-800 text-white p-2 rounded border border-gray-600"
-                        >
-                            <option value="">All Genres</option>
-                            {genres.map(genre => <option key={genre.id} value={genre.id}>{genre.name}</option>)}
-                        </select>
-                    </div>
+                    <h1 className="text-4xl font-bold capitalize">{mediaType === 'anime' ? 'Anime' : `${mediaType}s`}</h1>
                 </div>
+
+                {/* New, Modern Genre Bar */}
+                {mediaType !== 'anime' && (
+                    <div className="flex items-center space-x-2 mb-12 overflow-x-auto carousel-row">
+                        <button
+                            onClick={() => handleGenreChange('')}
+                            className={`px-4 py-2 text-sm font-semibold rounded-full flex-shrink-0 transition-colors duration-200 ${selectedGenreId === '' ? 'bg-red-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}
+                        >
+                            All Genres
+                        </button>
+                        {genres.map(genre => (
+                            <button
+                                key={genre.id}
+                                onClick={() => handleGenreChange(genre.id)}
+                                className={`px-4 py-2 text-sm font-semibold rounded-full flex-shrink-0 transition-colors duration-200 ${selectedGenreId === genre.id ? 'bg-red-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}
+                            >
+                                {genre.name}
+                            </button>
+                        ))}
+                    </div>
+                )}
 
                 {loading ? (
                     <><CarouselSkeleton /><CarouselSkeleton /></>
                 ) : (
                     Object.entries(pageData).map(([key, { title, items }]) => (
-                        items.length > 0 && <CarouselRow key={key} title={selectedGenre ? `${selectedGenre.name} ${title}` : title} items={items} onCardClick={openModal} mediaType={mediaType} categoryKey={key} />
+                        items.length > 0 && <CarouselRow key={key} title={selectedGenre ? `${selectedGenre.name} ${title}` : title} items={items} onCardClick={openModal} mediaType={mediaType === 'anime' ? 'tv' : mediaType} categoryKey={key} />
                     ))
                 )}
             </div>
 
-            {selectedMedia && <DetailsModal media={{...selectedMedia, media_type: mediaType}} onClose={closeModal} />}
+            {selectedMedia && <DetailsModal media={{...selectedMedia, media_type: mediaType === 'anime' ? 'tv' : mediaType}} onClose={closeModal} />}
         </main>
     );
 };

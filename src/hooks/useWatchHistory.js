@@ -8,14 +8,14 @@ export const useWatchHistory = () => {
             const history = localStorage.getItem(WATCH_HISTORY_KEY);
             return history ? JSON.parse(history) : {};
         } catch (error) {
-            console.error("Error reading from local storage:", error);
+            console.error("[WatchHistory] Error reading from local storage:", error);
             return {};
         }
     }, []);
 
     const updateProgress = useCallback((media, secondsWatched, duration) => {
         if (!media || !media.id || !media.mediaType) {
-            console.error("Cannot update progress: Invalid media object provided.");
+            console.error("[WatchHistory] CANCELED SAVE: Invalid media object provided.", media);
             return;
         }
 
@@ -34,8 +34,10 @@ export const useWatchHistory = () => {
 
         try {
             localStorage.setItem(WATCH_HISTORY_KEY, JSON.stringify(history));
+            // This log will confirm that the data is being saved
+            console.log(`[WatchHistory] SUCCESS: Saved progress for ${key}. Watched ${secondsWatched}s of ${duration}s.`);
         } catch (error) {
-            console.error("Error saving to local storage:", error);
+            console.error("[WatchHistory] FAILED to save to local storage:", error);
         }
     }, [getHistory]);
 

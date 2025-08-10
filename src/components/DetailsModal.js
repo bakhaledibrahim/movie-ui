@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
     fetchMovieDetails, fetchTvShowDetails, fetchSeasonDetails,
-    fetchSimilarMovies, fetchSimilarTvShows
+    fetchSimilarMovies, fetchSimilarTvShows, fetchVideos // Import fetchVideos
 } from '../api/tmdb';
 import { useMyList } from '../hooks/useMyList';
 import { FaPlay, FaTimes, FaPlus, FaCheck } from 'react-icons/fa';
@@ -10,6 +10,7 @@ import CarouselRow from './CarouselRow';
 
 const DetailsModal = ({ media, onClose }) => {
     const [details, setDetails] = useState(null);
+    const [trailerKey, setTrailerKey] = useState(null); // State for the trailer video
     const [selectedSeason, setSelectedSeason] = useState(null);
     const [similar, setSimilar] = useState([]);
     const [showModal, setShowModal] = useState(false);
@@ -27,8 +28,18 @@ const DetailsModal = ({ media, onClose }) => {
         setShowModal(true);
         const fetchAllDetails = async () => {
             try {
-                const detailsResponse = isMovie ? await fetchMovieDetails(media.id) : await fetchTvShowDetails(media.id);
+                // Fetch details and videos at the same time
+                const [detailsResponse, videoResponse] = await Promise.all([
+                    isMovie ? fetchMovieDetails(media.id) : fetchTvShowDetails(media.id),
+                    fetchVideos(media.media_type, media.id)
+                ]);
+
                 setDetails(detailsResponse.data);
+
+                // Find the best trailer to display
+                const trailer = videoResponse.data.results.find(v => v.type === 'Trailer') || videoResponse.data.results[0];
+                setTrailerKey(trailer?.key);
+
                 if (!isMovie && detailsResponse.data.seasons.length > 0) {
                     const firstSeason = detailsResponse.data.seasons.find(s => s.episode_count > 0 && s.season_number > 0) || detailsResponse.data.seasons.find(s => s.episode_count > 0);
                     if (firstSeason) handleSeasonClick(firstSeason.season_number, detailsResponse.data.id);
@@ -77,8 +88,20 @@ const DetailsModal = ({ media, onClose }) => {
             <div className={`bg-gray-900 rounded-lg w-11/12 max-w-6xl max-h-[90vh] overflow-y-auto transition-all duration-300 ${showModal ? 'scale-100 opacity-100' : 'scale-90 opacity-0'}`} onClick={e => e.stopPropagation()}>
                 {!details ? (<div className="h-96 flex items-center justify-center">Loading...</div>) : (
                     <>
-                        <div className="relative">
-                            <img src={`https://image.tmdb.org/t/p/w1280${details.backdrop_path}`} alt={details.title || details.name} className="w-full h-auto" />
+                        {/* This section now conditionally renders the video or the image */}
+                        <div className="relative aspect-video bg-black">
+                            {trailerKey ? (
+                                <iframe
+                                    title={`${details.title || details.name} Trailer`}
+                                    className="absolute inset-0 w-full h-full"
+                                    src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&mute=1&controls=0&loop=1&playlist=${trailerKey}`}
+                                    frameBorder="0"
+                                    allow="autoplay; encrypted-media"
+                                    allowFullScreen
+                                ></iframe>
+                            ) : (
+                                <img src={`https://image.tmdb.org/t/p/w1280${details.backdrop_path}`} alt={details.title || details.name} className="w-full h-full object-cover" />
+                            )}
                             <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent"></div>
                             <button onClick={handleClose} className="absolute top-4 right-4 bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-75"><FaTimes size={20} /></button>
                             <div className="absolute bottom-8 left-8 flex items-center space-x-4">
@@ -88,6 +111,8 @@ const DetailsModal = ({ media, onClose }) => {
                                 </button>
                             </div>
                         </div>
+
+                        {/* The rest of your component remains exactly the same */}
                         <div className="p-8">
                             <div className="flex justify-between items-start">
                                 <div className="w-2/3">
@@ -115,25 +140,36 @@ const DetailsModal = ({ media, onClose }) => {
                                 <div>
                                     <div className="flex justify-between items-center mt-8 mb-4">
                                         <h3 className="text-2xl font-bold">Episodes</h3>
-                                        <select onChange={(e) => handleSeasonClick(e.target.value)} className="bg-gray-800 text-white p-2 rounded border border-gray-600">
-                                            {details.seasons.filter(s => s.episode_count > 0).map(s => <option key={s.id} value={s.season_number}>{s.name}</option>)}
-                                        </select>
+                                        <div className="flex items-center space-x-2 overflow-x-auto carousel-row">
+                                            {details.seasons.filter(s => s.episode_count > 0).map(s => (
+                                                <button
+                                                    key={s.id}
+                                                    onClick={() => handleSeasonClick(s.season_number)}
+                                                    className={`px-4 py-2 text-sm font-semibold rounded-full flex-shrink-0 transition-colors duration-200 ${selectedSeason?.season_number === s.season_number ? 'bg-red-600 text-white' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}
+                                                >
+                                                    {s.name}
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
                                     {selectedSeason && (
-                                        <div className="space-y-3 pr-2">
+                                        <div className="carousel-row flex overflow-x-auto space-x-4 py-4 scroll-smooth">
                                             {selectedSeason.episodes.map(ep => (
-                                                <div key={ep.id} onClick={() => navigate(`/player/tv/${media.id}/${selectedSeason.season_number}/${ep.episode_number}`)}
-                                                     className="group relative bg-gray-800 p-4 rounded-lg flex items-center space-x-4 overflow-hidden cursor-pointer hover:bg-gray-700 transition-colors">
-                                                    {ep.still_path && (
-                                                        <div className="absolute inset-0 z-0">
-                                                            <img src={`https://image.tmdb.org/t/p/w500${ep.still_path}`} alt="" className="w-full h-full object-cover opacity-20 group-hover:opacity-30 transition-opacity" />
-                                                            <div className="absolute inset-0 bg-gradient-to-r from-gray-800 via-gray-800/70 to-transparent"></div>
-                                                        </div>
+                                                <div
+                                                    key={ep.id}
+                                                    onClick={() => navigate(`/player/tv/${media.id}/${selectedSeason.season_number}/${ep.episode_number}`)}
+                                                    className="group relative bg-gray-800 rounded-lg flex-shrink-0 w-64 h-36 overflow-hidden cursor-pointer"
+                                                >
+                                                    {ep.still_path ? (
+                                                        <img src={`https://image.tmdb.org/t/p/w500${ep.still_path}`} alt={ep.name} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <div className="w-full h-full bg-gray-700"></div>
                                                     )}
-                                                    <div className="relative z-10 flex-shrink-0 w-12 text-center"><span className="text-2xl font-bold text-gray-400">{ep.episode_number}</span></div>
-                                                    <div className="relative z-10 flex-grow">
-                                                        <h4 className="font-bold">{ep.name}</h4>
-                                                        <p className="text-gray-400 text-sm mt-1 line-clamp-2">{ep.overview}</p>
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex flex-col justify-end p-3">
+                                                        <h4 className="font-bold text-white text-sm">E{ep.episode_number}: {ep.name}</h4>
+                                                    </div>
+                                                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                        <FaPlay size={32} className="text-white" />
                                                     </div>
                                                 </div>
                                             ))}

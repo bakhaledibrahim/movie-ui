@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
+import { GenreProvider } from './context/GenreContext';
 import BrowsePage from './pages/BrowsePage';
 import MediaPage from './pages/MediaPage';
 import PlayerPage from './pages/PlayerPage';
@@ -18,8 +19,8 @@ const pageVariants = {
 
 const pageTransition = {
     type: 'tween',
-    ease: 'anticipate',
-    duration: 0.5,
+    ease: 'easeInOut',
+    duration: 0.8,
 };
 
 const AnimatedRoutes = () => {
@@ -39,6 +40,7 @@ const AnimatedRoutes = () => {
                     <Route path="/search" element={<motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}><SearchPage /></motion.div>} />
                     <Route path="/movies" element={<motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}><MediaPage key="movies" mediaType="movie" /></motion.div>} />
                     <Route path="/tv" element={<motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}><MediaPage key="tv" mediaType="tv" /></motion.div>} />
+                    <Route path="/anime" element={<motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}><MediaPage key="anime" mediaType="anime" /></motion.div>} />
                     <Route path="/my-list" element={<motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}><MyListPage /></motion.div>} />
                     <Route path="/person/:personId" element={<motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}><PersonPage /></motion.div>} />
                     <Route path="/view/:mediaType/:category" element={<motion.div initial="initial" animate="in" exit="out" variants={pageVariants} transition={pageTransition}><GridPage /></motion.div>} />
@@ -53,9 +55,11 @@ const AnimatedRoutes = () => {
 function App() {
     return (
         <Router>
-            <div className="bg-black min-h-screen text-white">
-                <AnimatedRoutes />
-            </div>
+            <GenreProvider>
+                <div className="bg-brand-bg min-h-screen text-white aurora-background">
+                    <AnimatedRoutes />
+                </div>
+            </GenreProvider>
         </Router>
     );
 }

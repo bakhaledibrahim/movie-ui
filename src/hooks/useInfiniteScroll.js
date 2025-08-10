@@ -5,7 +5,6 @@ export const useInfiniteScroll = (apiFunc) => {
     const [hasMore, setHasMore] = useState(true);
     const [loading, setLoading] = useState(false);
 
-    // Use refs to manage state within callbacks without causing re-renders
     const pageRef = useRef(1);
     const loadingRef = useRef(false);
     const hasMoreRef = useRef(true);
