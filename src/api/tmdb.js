@@ -50,6 +50,10 @@ export const fetchSimilarTvShows = (id) => client.get(`/tv/${id}/similar`);
 export const fetchCriticallyAcclaimedSciFi = (page = 1) => client.get(`/movie/acclaimed_scifi?page=${page}`);
 export const fetchMindBendingThrillers = (page = 1) => client.get(`/movie/mind_bending?page=${page}`);
 
+export const fetchBentoBoxContent = () => client.get('/bento');
+
+export const fetchMoviesByGenreList = (genreIds, page = 1) => client.get(`/discover/by_genres?genreIds=${genreIds}&page=${page}`);
+
 
 
 export const searchMedia = (query) => {

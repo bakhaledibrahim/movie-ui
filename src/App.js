@@ -2,7 +2,6 @@ import React from 'react';
 import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { GenreProvider } from './context/GenreContext';
-import { AmbianceProvider, useAmbiance } from './context/AmbianceContext';
 import BrowsePage from './pages/BrowsePage';
 import MediaPage from './pages/MediaPage';
 import PlayerPage from './pages/PlayerPage';
@@ -53,33 +52,13 @@ const AnimatedRoutes = () => {
     );
 };
 
-const AppBackground = ({ children }) => {
-    const { ambiance } = useAmbiance();
-    return (
-        <motion.div
-            className="bg-brand-bg min-h-screen text-white aurora-background"
-            // THE FIX IS HERE: We provide an initial backgroundSize
-            initial={{ backgroundSize: '400% 400%' }}
-            animate={{
-                background: `linear-gradient(-45deg, ${ambiance.join(',')})`,
-                backgroundSize: '400% 400%',
-            }}
-            transition={{duration: 1.5, ease: 'easeInOut'}}
-        >
-            {children}
-        </motion.div>
-    );
-}
-
 function App() {
     return (
         <Router>
             <GenreProvider>
-                <AmbianceProvider>
-                    <AppBackground>
-                        <AnimatedRoutes />
-                    </AppBackground>
-                </AmbianceProvider>
+                <div className="bg-brand-bg min-h-screen text-white">
+                    <AnimatedRoutes />
+                </div>
             </GenreProvider>
         </Router>
     );
