@@ -33,6 +33,7 @@
     animation: shimmer 2s infinite;
 }
 
+/* Updated Aurora Background for Ambiance Effect */
 .aurora-background {
     transition: background 1.5s ease-in-out;
 }

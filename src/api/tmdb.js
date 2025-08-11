@@ -20,8 +20,7 @@ export const fetchAppleAnime = (page = 1) => client.get(`/anime/apple?page=${pag
 
 // --- EXISTING FUNCTIONS ---
 export const fetchCollectionDetails = (collectionId) => client.get(`/collection/${collectionId}`);
-export const fetchCriticallyAcclaimedSciFi = () => client.get('/movie/acclaimed_scifi');
-export const fetchMindBendingThrillers = () => client.get('/movie/mind_bending');
+
 export const fetchMovieRecommendations = (movieId) => client.get(`/movie/${movieId}/recommendations`);
 export const fetchTvRecommendations = (showId) => client.get(`/tv/${showId}/recommendations`);
 export const fetchNetflixOriginals = (page = 1) => client.get(`/tv/netflix?page=${page}`);
@@ -46,6 +45,12 @@ export const fetchTvShowDetails = (id) => client.get(`/tv/${id}`);
 export const fetchSeasonDetails = (tvId, seasonNumber) => client.get(`/tv/${tvId}/season/${seasonNumber}`);
 export const fetchSimilarMovies = (id) => client.get(`/movie/${id}/similar`);
 export const fetchSimilarTvShows = (id) => client.get(`/tv/${id}/similar`);
+
+
+export const fetchCriticallyAcclaimedSciFi = (page = 1) => client.get(`/movie/acclaimed_scifi?page=${page}`);
+export const fetchMindBendingThrillers = (page = 1) => client.get(`/movie/mind_bending?page=${page}`);
+
+
 
 export const searchMedia = (query) => {
     const movieSearch = client.get(`/search/movie?query=${query}`);

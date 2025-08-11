@@ -1,6 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef } from 'react'; // useEffect removed
 import { useNavigate } from 'react-router-dom';
-import { FaPlay, FaPlus, FaChevronDown, FaCheck, FaBell, FaStar } from 'react-icons/fa';
+import { FaPlay, FaPlus, FaChevronDown, FaCheck, FaBell } from 'react-icons/fa';
 import { useGenres } from '../context/GenreContext';
 import { useMyList } from '../hooks/useMyList';
 import { useReminders } from '../hooks/useReminders';
@@ -21,15 +21,16 @@ const CarouselCard = ({ item, onClick, isUpcoming = false }) => {
     const mediaType = item.media_type || (item.title ? 'movie' : 'tv');
     const genres = getGenreNames(item.genre_ids, mediaType);
     const year = item.release_date ? new Date(item.release_date).getFullYear() : (item.first_air_date ? new Date(item.first_air_date).getFullYear() : 'N/A');
-    const rating = item.vote_average ? item.vote_average.toFixed(1) : 'N/A';
 
     const handleMouseEnter = () => {
         hoverTimeout.current = setTimeout(async () => {
             setIsHovering(true);
             try {
-                const response = await api.fetchVideos(mediaType, item.id);
-                const trailer = response.data.results.find(v => v.type === 'Trailer') || response.data.results[0];
-                if (trailer) setTrailerKey(trailer.key);
+                const response = mediaType === 'movie'
+                    ? await api.fetchMovieDetails(item.id)
+                    : await api.fetchTvShowDetails(item.id);
+                const video = response.data.videos.results.find(v => v.type === 'Trailer');
+                if (video) setTrailerKey(video.key);
             } catch (error) {
                 console.error("Failed to fetch trailer", error);
             }
@@ -69,7 +70,7 @@ const CarouselCard = ({ item, onClick, isUpcoming = false }) => {
         >
             {isHovering && trailerKey ? (
                 <iframe
-                    title={`${item.title || item.name} Trailer`}
+                    title={`${item.title || item.name} Trailer`} // Title attribute added here
                     className="absolute inset-0 w-full h-full"
                     src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1&mute=1&controls=0&loop=1&playlist=${trailerKey}`}
                     frameBorder="0"
@@ -82,12 +83,8 @@ const CarouselCard = ({ item, onClick, isUpcoming = false }) => {
 
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
                 <h3 className="text-white font-bold text-lg line-clamp-2">{item.title || item.name}</h3>
-                <div className="flex items-center space-x-4 text-sm mt-2">
+                <div className="flex items-center space-x-2 text-sm mt-2">
                     <span className="text-green-400 font-semibold">{Math.round(item.vote_average * 10)}% Match</span>
-                    <div className="flex items-center space-x-1">
-                        <FaStar className="text-yellow-400" />
-                        <span className="text-white font-semibold">{rating}</span>
-                    </div>
                     <span className="text-gray-400">{year}</span>
                 </div>
                 <div className="flex items-center space-x-2 mt-4">

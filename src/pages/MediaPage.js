@@ -3,9 +3,11 @@ import {
     fetchMovieGenres, fetchTvShowGenres, fetchNowPlayingMovies,
     fetchPopularMovies, fetchTopRatedMovies, fetchPopularTvShows,
     fetchTopRatedTvShows, fetchUpcomingMovies, fetchHighQualityMovies,
+    // THE FIX IS HERE: Added all the missing anime fetch functions
     fetchPopularAnime, fetchTopRatedAnime, fetchNetflixAnime,
     fetchDisneyAnime, fetchHboAnime, fetchAppleAnime
 } from '../api/tmdb';
+import { useAmbiance } from '../context/AmbianceContext';
 import Hero from '../components/Hero';
 import CarouselRow from '../components/CarouselRow';
 import DetailsModal from '../components/DetailsModal';
@@ -18,9 +20,13 @@ const MediaPage = ({ mediaType }) => {
     const [loading, setLoading] = useState(true);
     const [heroMedia, setHeroMedia] = useState(null);
     const [selectedMedia, setSelectedMedia] = useState(null);
+    const { clearAmbiance } = useAmbiance();
 
     useEffect(() => {
-        // No genre filter for anime page, so we don't fetch genres
+        clearAmbiance();
+    }, [clearAmbiance]);
+
+    useEffect(() => {
         if (mediaType === 'anime') {
             setGenres([]);
             setSelectedGenreId('');
@@ -128,7 +134,6 @@ const MediaPage = ({ mediaType }) => {
                     <h1 className="text-4xl font-bold capitalize">{mediaType === 'anime' ? 'Anime' : `${mediaType}s`}</h1>
                 </div>
 
-                {/* New, Modern Genre Bar */}
                 {mediaType !== 'anime' && (
                     <div className="flex items-center space-x-2 mb-12 overflow-x-auto carousel-row">
                         <button
@@ -158,7 +163,7 @@ const MediaPage = ({ mediaType }) => {
                 )}
             </div>
 
-            {selectedMedia && <DetailsModal media={{...selectedMedia, media_type: mediaType === 'anime' ? 'tv' : mediaType}} onClose={closeModal} />}
+            {selectedMedia && <DetailsModal media={{...selectedMedia, media_type: mediaType === 'anime' ? 'tv' : mediaType}} onClose={closeModal} onSuggestionClick={openModal} />}
         </main>
     );
 };

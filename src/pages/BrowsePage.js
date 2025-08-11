@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-    fetchTrendingMovies, fetchPopularTvShows, fetchUpcomingMovies,
-    fetchMovieDetails, fetchTvShowDetails, fetchPopularMovies,
-    fetchMovieRecommendations, fetchTvRecommendations
+    fetchTrendingMovies, fetchPopularTvShows, fetchMovieDetails,
+    fetchTvShowDetails, fetchMovieRecommendations,
+    fetchTvRecommendations, fetchCriticallyAcclaimedSciFi, fetchMindBendingThrillers,
+    fetchCollectionDetails, fetchTopRatedMovies // fetchPopularMovies has been removed
 } from '../api/tmdb';
 import { useWatchHistory } from '../hooks/useWatchHistory';
 import Hero from '../components/Hero';
@@ -11,11 +12,12 @@ import CarouselRow from '../components/CarouselRow';
 import Top10CarouselRow from '../components/Top10CarouselRow';
 import DetailsModal from '../components/DetailsModal';
 import { CarouselSkeleton } from '../components/Skeleton';
+import LiveActivityFeed from '../components/LiveActivityFeed';
 
 const BrowsePage = () => {
     const [data, setData] = useState({
         top10Movies: [], popularTv: [], forYou: [],
-        upcomingMovies: [], actionMovies: [], comedyMovies: []
+        acclaimedSciFi: [], mindBendingThrillers: [], bondCollection: []
     });
     const [continueWatching, setContinueWatching] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -54,25 +56,32 @@ const BrowsePage = () => {
                         ? fetchMovieRecommendations(lastWatched.id)
                         : fetchTvRecommendations(lastWatched.id);
                 } else {
-                    forYouPromise = fetchTrendingMovies(); // Fallback to trending
+                    forYouPromise = fetchTrendingMovies();
                 }
 
+                // Generate random pages for dynamic content on refresh
+                const randomPage = () => Math.floor(Math.random() * 10) + 1;
+
                 const [
-                    top10Res, popularTvRes, upcomingRes,
-                    actionMoviesRes, comedyMoviesRes, forYouRes
+                    top10Res, popularTvRes, forYouRes,
+                    acclaimedSciFiRes, mindBendingRes, bondCollectionRes
                 ] = await Promise.all([
-                    fetchPopularMovies(), fetchPopularTvShows(), fetchUpcomingMovies(),
-                    fetchPopularMovies('28'), fetchPopularMovies('35'), forYouPromise
+                    fetchTopRatedMovies('', randomPage()), // Use Top Rated for the Top 10 list
+                    fetchPopularTvShows('', randomPage()),
+                    forYouPromise,
+                    fetchCriticallyAcclaimedSciFi(randomPage()),
+                    fetchMindBendingThrillers(randomPage()),
+                    fetchCollectionDetails('645')
                 ]);
                 setData({
                     top10Movies: top10Res.data.results,
                     popularTv: popularTvRes.data.results,
-                    upcomingMovies: upcomingRes.data.results,
-                    actionMovies: actionMoviesRes.data.results,
-                    comedyMovies: comedyMoviesRes.data.results,
                     forYou: forYouRes.data.results,
+                    acclaimedSciFi: acclaimedSciFiRes.data.results,
+                    mindBendingThrillers: mindBendingRes.data.results,
+                    bondCollection: bondCollectionRes.data.parts,
                 });
-                setHeroMovie(top10Res.data.results[Math.floor(Math.random() * 10)]);
+                setHeroMovie(top10Res.data.results[0]); // Use the #1 top rated movie for the hero
             } catch (error) {
                 console.error("Failed to fetch initial data", error);
             } finally {
@@ -100,7 +109,8 @@ const BrowsePage = () => {
 
     return (
         <main>
-            {loading ? <div className="h-[56.25vw] bg-gray-800 skeleton relative overflow-hidden"></div> : <Hero movie={heroMovie} onMoreInfo={() => openModal(heroMovie, heroMovie.title ? 'movie' : 'tv')} />}
+            <LiveActivityFeed popularItems={data.top10Movies} />
+            {loading ? <div className="h-[56.25vw] bg-gray-800 skeleton relative overflow-hidden"></div> : <Hero movie={heroMovie} onMoreInfo={() => openModal(heroMovie, 'movie')} />}
             <div className="px-4 md:px-12 -mt-20 relative z-10 pb-16">
                 {loading ? (
                     <><CarouselSkeleton /><CarouselSkeleton /></>
@@ -108,15 +118,15 @@ const BrowsePage = () => {
                     <>
                         {continueWatching.length > 0 && <CarouselRow title="Continue Watching" items={continueWatching} onCardClick={handleContinueWatchingClick} />}
                         {data.forYou.length > 0 && <CarouselRow title="For You" items={data.forYou} onCardClick={(media) => openModal(media, media.title ? 'movie' : 'tv')} />}
-                        <Top10CarouselRow title="Top 10 Movies Today" items={data.top10Movies} onCardClick={(media) => openModal(media, 'movie')} />
-                        <CarouselRow title="Upcoming" items={data.upcomingMovies} onCardClick={(media) => openModal(media, 'movie')} isUpcoming={true} />
-                        <CarouselRow title="Popular TV Shows" items={data.popularTv} onCardClick={(media) => openModal(media, 'tv')} />
-                        <CarouselRow title="Action & Adventure" items={data.actionMovies} onCardClick={(media) => openModal(media, 'movie')} />
-                        <CarouselRow title="Comedies" items={data.comedyMovies} onCardClick={(media) => openModal(media, 'movie')} />
+                        <Top10CarouselRow title="Top 10 Movies Today" items={data.top10Movies} onCardClick={(media) => openModal(media, 'movie')} mediaType="movie" categoryKey="top_rated" />
+                        <CarouselRow title="Critically Acclaimed Sci-Fi" items={data.acclaimedSciFi} onCardClick={(media) => openModal(media, 'movie')} mediaType="movie" categoryKey="acclaimed_scifi" />
+                        <CarouselRow title="Mind-Bending Thrillers" items={data.mindBendingThrillers} onCardClick={(media) => openModal(media, 'movie')} mediaType="movie" categoryKey="mind_bending" />
+                        <CarouselRow title="The James Bond Collection" items={data.bondCollection} onCardClick={(media) => openModal(media, 'movie')} />
+                        <CarouselRow title="Popular TV Shows" items={data.popularTv} onCardClick={(media) => openModal(media, 'tv')} mediaType="tv" categoryKey="popular" />
                     </>
                 )}
             </div>
-            {selectedMedia && <DetailsModal media={selectedMedia} onClose={closeModal} />}
+            {selectedMedia && <DetailsModal media={selectedMedia} onClose={closeModal} onSuggestionClick={openModal} />}
         </main>
     );
 };

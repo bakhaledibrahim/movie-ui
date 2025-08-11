@@ -12,7 +12,7 @@ const GridPage = () => {
     const { title } = location.state || { title: 'All' };
     const [selectedMedia, setSelectedMedia] = useState(null);
 
-    // This is the corrected logic. It now includes the 'anime' mediaType and all its categories.
+    // This is the corrected and complete mapping of all categories to their API functions.
     const apiFunc = useCallback((page) => {
         const funcMap = {
             movie: {
@@ -20,9 +20,8 @@ const GridPage = () => {
                 popular: (p) => api.fetchPopularMovies('', p),
                 top_rated: (p) => api.fetchTopRatedMovies('', p),
                 upcoming: api.fetchUpcomingMovies,
-                in_theaters: (p) => api.fetchNowPlayingMovies('', p), // Corrected key
-                high_quality: (p) => api.fetchHighQualityMovies('', p),
-                new_releases: api.fetchNewMovieReleases,
+                acclaimed_scifi: api.fetchCriticallyAcclaimedSciFi,
+                mind_bending: api.fetchMindBendingThrillers,
             },
             tv: {
                 popular: (p) => api.fetchPopularTvShows('', p),
@@ -32,16 +31,6 @@ const GridPage = () => {
                 disney: api.fetchDisneyOriginals,
                 amazon: api.fetchAmazonOriginals,
                 apple: api.fetchAppleOriginals,
-                hbo: api.fetchHboOriginals,
-            },
-            // The missing anime map with corrected keys
-            anime: {
-                popular_anime: api.fetchPopularAnime,
-                top_rated_anime: api.fetchTopRatedAnime,
-                netflix_anime: api.fetchNetflixAnime,
-                disney_anime: api.fetchDisneyAnime,
-                hbo_anime: api.fetchHboAnime,
-                apple_anime: api.fetchAppleAnime,
             }
         };
 
@@ -75,8 +64,7 @@ const GridPage = () => {
     }, [apiFunc]);
 
     const openModal = (media) => {
-        // When opening a modal from the anime grid, we know the media type is 'tv'
-        const correctMediaType = mediaType === 'anime' ? 'tv' : mediaType;
+        const correctMediaType = media.title ? 'movie' : 'tv';
         setSelectedMedia({ ...media, media_type: correctMediaType });
     };
     const closeModal = () => setSelectedMedia(null);
@@ -89,7 +77,7 @@ const GridPage = () => {
                     <div
                         key={`${item.id}-${index}`}
                         ref={items.length === index + 1 ? lastItemRef : null}
-                        className="w-full h-80 md:h-96" // Increased size for grid view
+                        className="w-full h-80 md:h-96"
                     >
                         <CarouselCard item={item} onClick={() => openModal(item)} />
                     </div>
@@ -97,7 +85,7 @@ const GridPage = () => {
             </div>
             {loading && <div className="text-center py-8"><CarouselSkeleton /></div>}
             {!hasMore && !loading && <div className="text-center py-8 text-gray-500">You've reached the end.</div>}
-            {selectedMedia && <DetailsModal media={selectedMedia} onClose={closeModal} />}
+            {selectedMedia && <DetailsModal media={selectedMedia} onClose={closeModal} onSuggestionClick={openModal} />}
         </div>
     );
 };

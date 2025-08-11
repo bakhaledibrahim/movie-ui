@@ -8,6 +8,7 @@ export const useReminders = () => {
             const list = localStorage.getItem(REMINDER_LIST_KEY);
             return list ? JSON.parse(list) : [];
         } catch (error) {
+            console.error("Error reading reminder list from local storage:", error);
             return [];
         }
     });
