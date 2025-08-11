@@ -33,15 +33,6 @@
     animation: shimmer 2s infinite;
 }
 
-/*@keyframes aurora {*/
-/*    0% { background-position: 0% 50%; }*/
-/*    50% { background-position: 100% 50%; }*/
-/*    100% { background-position: 0% 50%; }*/
-/*}*/
-
-/*.aurora-background {*/
-/*    !* It now uses your custom color as the base, with darker shades for the animation *!*/
-/*    background: linear-gradient(-45deg, #2c2c2c, #373737, #1e1e1e, #373737);*/
-/*    background-size: 400% 400%;*/
-/*    animation: aurora 20s ease infinite;*/
-/*}*/
+.aurora-background {
+    transition: background 1.5s ease-in-out;
+}
